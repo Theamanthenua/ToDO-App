@@ -1,18 +1,3 @@
-
-# from flask import Flask, render_template, request, redirect, url_for
-
-# app = Flask(__name__, template_folder="templates")
-
-# @app.route("/")
-# def index():
-#     return render_template("index.html")
-
-
-# if __name__ == '__main__':
-#     app.run(debug=True)
-
-
-
 from flask import Flask, request, render_template, redirect
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
@@ -44,15 +29,15 @@ def read_notes():
 
 
 def update_note(note_id, text, done):
-    db.session.query(Note).filter_by(id=note_id).update({
-        "text": text,
-        "done": True if done == "on" else False
-    })
+    note = db.session.query(Note).get(note_id)
+    note.text = text
+    note.done = done
     db.session.commit()
 
 
 def delete_note(note_id):
-    db.session.query(Note).filter_by(id=note_id).delete()
+    note = db.session.query(Note).get(note_id)
+    db.session.delete(note)
     db.session.commit()
 
 
@@ -66,12 +51,17 @@ def view_index():
 @app.route("/edit/<note_id>", methods=["POST", "GET"])
 def edit_note(note_id):
     if request.method == "POST":
-        update_note(note_id, text=request.form['text'], done=request.form['done'])
+        update_note(
+            note_id,
+            text=request.form['text'],
+            done=True if request.form.get('done') == 'on' else False
+        )
     elif request.method == "GET":
         delete_note(note_id)
     return redirect("/", code=302)
 
 
 if __name__ == "__main__":
-    db.create_all()
+    with app.app_context():
+        db.create_all()
     app.run(debug=True)
